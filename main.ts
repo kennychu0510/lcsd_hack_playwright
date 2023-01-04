@@ -1,12 +1,13 @@
-import { firefox } from "playwright";
-import { URL, USER_AGENT } from "./constants";
-import { getCleanedImg } from "./scripts/getCleanedImg";
+import { firefox, Page } from "playwright";
+import { URL } from "./constants";
+import { getText } from "./tesseract";
+import { autoEnterCode, getUserAgent, ocrImg } from "./utils/helper";
 
 async function main() {
   const browser = await firefox.launch({ headless: false });
   let page = await browser.newPage();
   const context = await browser.newContext({
-    userAgent: USER_AGENT[0],
+    userAgent: getUserAgent(),
   });
   await page.goto(URL.HOME_PAGE);
   await page.click("#LCSD_4");
@@ -39,9 +40,22 @@ async function main() {
     }
   }
 
-  console.log(await getCleanedImg(page));
 
-  await browser.close();
+  let code = ''
+  let result: string | boolean = false;
+  let attempt = 0
+  do {
+    attempt++
+    console.log('attempt:', attempt)
+    code = await ocrImg(page)
+    if (code.length === 4) {
+      result = await autoEnterCode(code, page);
+      console.log('result of attempt', attempt, result)
+    }
+  } while (!result || typeof result === 'string');
+  console.log('OCR success')
+
+  slideBtn();
 }
 
 main();

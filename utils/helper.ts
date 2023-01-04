@@ -1,4 +1,53 @@
 import { Page } from "playwright";
+import { getText } from "../tesseract";
+import USER_AGENTS from '../userAgents.json'
+
+export function getUserAgent(): string {
+  const length = USER_AGENTS.length;
+  return USER_AGENTS[Math.floor(Math.random() * length + 1)];
+}
+
+async function sleep(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+export async function ocrImg(page: Page) {
+  console.log("..........getting Image for OCR..........");
+  await page.evaluate(async () => {
+
+    function waitForChange(target: HTMLElement) {
+      return new Promise<void>(resolve => {
+        const observer = new MutationObserver(mutations => {
+          observer.disconnect();
+          resolve();
+        })
+        
+        observer.observe(target, {
+          childList: true,
+          subtree: true,
+          attributes: true,
+          attributeOldValue: true,
+          characterData: true,
+          characterDataOldValue: true
+        })
+      })
+    }
+
+      const regenImgBtn = document.querySelector(".actionBtnSmall") as HTMLButtonElement;
+      const observedElement = document.querySelector("#imageCaptchaDivision") as HTMLElement;
+      regenImgBtn.click();
+      await waitForChange(observedElement);
+  });
+  
+  // await page.waitForTimeout(1000);
+
+  const cleanedImg = await getCleanedImg(page);
+  let recognizedText = await getText(cleanedImg);
+  recognizedText = recognizedText.trim();
+  const uniqueCode = [...new Set(recognizedText)].join("");
+  console.log({ uniqueCode });
+  return uniqueCode;
+}
 
 export async function getCleanedImg(page: Page) {
   return await page.evaluate(() => {
@@ -111,4 +160,43 @@ export async function getCleanedImg(page: Page) {
     /* SEND RESULTS BACK TO APP */
     return Promise.resolve(cleanedImageURL);
   });
+}
+
+export async function autoEnterCode(code: string, page: Page) {
+  console.log("..........auto entering code..........");
+  const result = await page.evaluate((code) => {
+    try {
+      const clickedBtn = document.querySelector('[sel="true"]');
+      if (clickedBtn) {
+        (clickedBtn as HTMLButtonElement).click();
+      }
+      const btns = document.querySelector("#virtualKeysWrapper")?.children;
+      if (!btns) {
+        return false;
+      }
+
+      let clickCount = 0;
+
+      loop1: for (let letter of code) {
+        loop2: for (let i = 0; i < btns.length; i++) {
+          if (btns[i].textContent === letter) {
+            const button = btns[i] as HTMLButtonElement;
+            clickCount++;
+            button.click();
+            continue loop1;
+          }
+        }
+      }
+
+      if (clickCount !== 4) {
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      return JSON.stringify(error);
+    }
+  }, code);
+
+  return result;
 }
