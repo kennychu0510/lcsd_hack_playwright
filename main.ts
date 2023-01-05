@@ -10,7 +10,10 @@ import {
   slideBtn,
 } from "./utils/helper";
 
-async function main(agent: string) {
+type EnquireOptions = {
+  agent: string;
+};
+async function autoEnquire({ agent }: EnquireOptions) {
   const browser = await firefox.launch({ headless: false });
   let homePage = await browser.newPage({ userAgent: agent });
   await homePage.goto(URL.HOME_PAGE);
@@ -35,11 +38,11 @@ async function main(agent: string) {
     isInsideEnquiryPage = await enterPage(page);
   } while (!isInsideEnquiryPage);
 
-  console.log(page.url());
+  console.log("You are now inside Enquiry Page");
 }
 
 try {
-  main(getUserAgent());
+  autoEnquire({ agent: getUserAgent() });
 } catch (error) {
   console.log(error);
 }
