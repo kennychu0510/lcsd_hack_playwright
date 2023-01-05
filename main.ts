@@ -1,61 +1,41 @@
-import { firefox, Page } from "playwright";
-import { URL } from "./constants";
-import { getText } from "./tesseract";
-import { autoEnterCode, getUserAgent, ocrImg } from "./utils/helper";
+import { firefox, Page } from 'playwright';
+import { URL } from './constants';
+import { ScriptResult } from './model';
+import { getText } from './tesseract';
+import { autoEnterCode, enterPage, getUserAgent, ocrImg, slideBtn } from './utils/helper';
 
-async function main() {
+async function main(agent: string) {
   const browser = await firefox.launch({ headless: false });
-  let page = await browser.newPage();
-  const context = await browser.newContext({
-    userAgent: getUserAgent(),
-  });
-  await page.goto(URL.HOME_PAGE);
-  await page.click("#LCSD_4");
+  let homePage = await browser.newPage({ userAgent: agent });
+  await homePage.goto(URL.HOME_PAGE);
+  await homePage.click('#LCSD_4');
 
-  context.on("request", (data) => {
-    console.log(data);
-  });
+  const page = await homePage.waitForEvent('popup');
+  await page.waitForLoadState('networkidle');
 
-  page = await page.waitForEvent("popup");
-  await page.waitForLoadState("networkidle");
+  const firstPage = browser.contexts()[0].pages()[0];
+  console.log('first page url:', firstPage.url());
+  await firstPage.setViewportSize({ width: 0, height: 0 });
 
-  console.log(await page.evaluate("location.href"));
-  await page.setViewportSize({ width: 400, height: 900 });
-
-  async function slideBtn() {
-    const slideBtn = await page.locator("#continueId > button").boundingBox();
-    if (slideBtn) {
-      await page.mouse.move(slideBtn.x + slideBtn.width / 2, slideBtn.y + slideBtn.height / 2);
-      await page.mouse.down({
-        button: "left",
-      });
-      await page.mouse.move(
-        slideBtn.x + slideBtn.width / 2 + 150,
-        slideBtn.y + slideBtn.height / 2,
-        {
-          steps: 5000,
-        }
-      );
-      await page.mouse.up();
-    }
+  if (page.url().includes('warning')) {
+    const errorMsg = await page.locator('.errorMsg').innerText();
+    throw new Error(errorMsg);
   }
+  // console.log(await page.evaluate('location.href'));
+  await page.setViewportSize({ width: 400, height: 600 });
 
-
-  let code = ''
-  let result: string | boolean = false;
-  let attempt = 0
+  let isInsideEnquiryPage = false;
   do {
-    attempt++
-    console.log('attempt:', attempt)
-    code = await ocrImg(page)
-    if (code.length === 4) {
-      result = await autoEnterCode(code, page);
-      console.log('result of attempt', attempt, result)
-    }
-  } while (!result || typeof result === 'string');
-  console.log('OCR success')
-
-  slideBtn();
+    isInsideEnquiryPage = await enterPage(page);
+  } while (!isInsideEnquiryPage);
+  
+  console.log(page.url());
 }
 
-main();
+try {
+  main(getUserAgent());
+} catch (error) {
+  console.log(error);
+}
+
+
