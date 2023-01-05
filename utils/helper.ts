@@ -1,7 +1,7 @@
-import { Page } from 'playwright';
-import { ScriptResult } from '../model';
-import { getText } from '../tesseract';
-import USER_AGENTS from '../userAgents.json';
+import { Page } from "playwright";
+import { ScriptResult } from "../model";
+import { getText } from "../tesseract";
+import USER_AGENTS from "../userAgents.json";
 
 export function getUserAgent(): string {
   const length = USER_AGENTS.length;
@@ -13,7 +13,7 @@ async function sleep(ms: number) {
 }
 
 export async function ocrImg(page: Page) {
-  console.log('..........getting Image for OCR..........');
+  console.log("..........getting Image for OCR..........");
   await page.evaluate(async () => {
     function waitForChange(target: HTMLElement) {
       return new Promise<void>((resolve) => {
@@ -33,8 +33,12 @@ export async function ocrImg(page: Page) {
       });
     }
 
-    const regenImgBtn = document.querySelector('.actionBtnSmall') as HTMLButtonElement;
-    const observedElement = document.querySelector('#imageCaptchaDivision') as HTMLElement;
+    const regenImgBtn = document.querySelector(
+      ".actionBtnSmall"
+    ) as HTMLButtonElement;
+    const observedElement = document.querySelector(
+      "#imageCaptchaDivision"
+    ) as HTMLElement;
     regenImgBtn.click();
     await waitForChange(observedElement);
   });
@@ -44,14 +48,18 @@ export async function ocrImg(page: Page) {
   const cleanedImg = await getCleanedImg(page);
   let recognizedText = await getText(cleanedImg);
   recognizedText = recognizedText.trim();
-  const uniqueCode = [...new Set(recognizedText)].join('');
+  const uniqueCode = [...new Set(recognizedText)].join("");
   console.log({ uniqueCode });
   return uniqueCode;
 }
 
 export async function getCleanedImg(page: Page) {
   return await page.evaluate(() => {
-    function setPixelRGB(pixel: Uint8ClampedArray, index: number, rgbValue: number) {
+    function setPixelRGB(
+      pixel: Uint8ClampedArray,
+      index: number,
+      rgbValue: number
+    ) {
       pixel[index] = rgbValue;
       pixel[index + 1] = rgbValue;
       pixel[index + 2] = rgbValue;
@@ -73,14 +81,16 @@ export async function getCleanedImg(page: Page) {
       return neighborIndices;
     }
 
-    const img = document.querySelector('#inputTextWrapper img') as HTMLImageElement;
+    const img = document.querySelector(
+      "#inputTextWrapper img"
+    ) as HTMLImageElement;
     const width = img.naturalWidth;
     const height = img.naturalHeight;
     const src = img.src;
-    const canvas = document.createElement('canvas') as HTMLCanvasElement;
+    const canvas = document.createElement("canvas") as HTMLCanvasElement;
     canvas.width = width;
     canvas.height = height;
-    const ctx = canvas.getContext('2d')!;
+    const ctx = canvas.getContext("2d")!;
     ctx.drawImage(img, 0, 0);
     const imageData = ctx.getImageData(0, 0, img.width, img.height);
     const THRESHOLD = 100;
@@ -163,18 +173,18 @@ export async function getCleanedImg(page: Page) {
 }
 
 export async function autoEnterCode(code: string, page: Page) {
-  console.log('..........auto entering code..........');
+  console.log("..........auto entering code..........");
   const result = await page.evaluate((code) => {
     try {
       const clickedBtn = document.querySelector('[sel="true"]');
       if (clickedBtn) {
         (clickedBtn as HTMLButtonElement).click();
       }
-      const btns = document.querySelector('#virtualKeysWrapper')?.children;
+      const btns = document.querySelector("#virtualKeysWrapper")?.children;
       if (!btns) {
         return {
-          status: 'error',
-          message: 'No virtual keys found',
+          status: "error",
+          message: "No virtual keys found",
         };
       }
 
@@ -193,18 +203,18 @@ export async function autoEnterCode(code: string, page: Page) {
 
       if (clickCount !== 4) {
         return {
-          status: 'error',
-          message: 'only clicked ' + clickCount + ' buttons',
+          status: "error",
+          message: "only clicked " + clickCount + " buttons",
         };
       }
 
       return {
-        status: 'success',
-        message: 'clicked ' + clickCount + ' buttons',
+        status: "success",
+        message: "clicked " + clickCount + " buttons",
       };
     } catch (error) {
       return {
-        status: 'error',
+        status: "error",
         message: JSON.stringify(error),
       };
     }
@@ -214,43 +224,50 @@ export async function autoEnterCode(code: string, page: Page) {
 }
 
 export async function slideBtn(page: Page) {
-  const slideBtn = await page.locator('#continueId > button').boundingBox();
+  const slideBtn = await page.locator("#continueId > button").boundingBox();
   if (slideBtn) {
-    await page.mouse.move(slideBtn.x + slideBtn.width / 2, slideBtn.y + slideBtn.height / 2);
+    await page.mouse.move(
+      slideBtn.x + slideBtn.width / 2,
+      slideBtn.y + slideBtn.height / 2
+    );
     await page.mouse.down({
-      button: 'left',
+      button: "left",
     });
-    await page.mouse.move(slideBtn.x + slideBtn.width / 2 + 150, slideBtn.y + slideBtn.height / 2, {
-      steps: 4000,
-    });
+    await page.mouse.move(
+      slideBtn.x + slideBtn.width / 2 + 150,
+      slideBtn.y + slideBtn.height / 2,
+      {
+        steps: 4000,
+      }
+    );
     await page.mouse.up();
   }
 }
 
 export async function enterPage(page: Page) {
-  let code = '';
+  let code = "";
   let result: ScriptResult = {
-    status: 'pending',
-    message: '',
+    status: "pending",
+    message: "",
   };
   let attempt = 0;
 
   do {
     attempt++;
-    console.log('attempt:', attempt);
+    console.log("attempt:", attempt);
     code = await ocrImg(page);
     if (code.length === 4) {
       result = await autoEnterCode(code, page);
-      console.log('result of attempt', attempt, result);
+      console.log("result of attempt", attempt, result);
     }
-  } while (result.status !== 'success');
-  console.log('OCR success');
+  } while (result.status !== "success");
+  console.log("OCR success");
 
   const navigationPromise = page.waitForNavigation();
   await slideBtn(page);
   await navigationPromise;
-  if (await page.locator('#globalErrorPanel').isVisible()) {
-    return false
-  } 
-  return true
+  if (await page.locator("#globalErrorPanel").isVisible()) {
+    return false;
+  }
+  return true;
 }

@@ -10,9 +10,14 @@
     "typescript": "^4.9.4"
   },
   "scripts": {
-    "main": "npx ts-node main.ts"
+    "main": "npx ts-node main.ts",
+    "prepare": "husky install",
+    "format": "npx prettier '**/*.{ts,js}' --write"
   },
   "devDependencies": {
-    "@types/node": "^18.11.18"
+    "@types/node": "^18.11.18",
+    "husky": "^8.0.0",
+    "prettier": "2.8.1",
+    "pretty-quick": "^3.1.3"
   }
 }

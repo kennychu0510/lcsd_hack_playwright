@@ -1,14 +1,14 @@
 import { createWorker } from "tesseract.js";
 const path = require("path");
-let loading = 'Loading.'
+let loading = "Loading.";
 
 export async function getText(img: string) {
   const worker = await createWorker({
     langPath: path.join(__dirname, "..", "lang-data"),
     logger: (m) => {
-      let message = loading += '.'
+      let message = (loading += ".");
       if (message.length > 20) {
-        message = 'Loading.'
+        message = "Loading.";
       }
       console.log(message);
     },
@@ -19,8 +19,7 @@ export async function getText(img: string) {
   const {
     data: { text },
   } = await worker.recognize(img);
-  console.log('OCR results: ', text);
+  console.log("OCR results: ", text);
   await worker.terminate();
   return text;
 }
-
