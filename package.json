@@ -1,5 +1,5 @@
 {
-  "name": "lcsd_hack",
+  "name": "lcsd_hack_playwright",
   "version": "1.0.0",
   "main": "index.js",
   "license": "MIT",
