@@ -6,8 +6,7 @@ import {
   autoEnterCode,
   enterPage,
   getUserAgent,
-  ocrImg  ,
-
+  ocrImg,
   slideBtn,
 } from "./utils/helper";
 
