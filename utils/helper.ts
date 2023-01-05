@@ -14,7 +14,7 @@ async function sleep(ms: number) {
 
 export async function ocrImg(page: Page) {
   console.log("..........getting Image for OCR..........");
-  await page.evaluate(async () => {
+  const result = await page.evaluate(async () => {
     function waitForChange(target: HTMLElement) {
       return new Promise<void>((resolve) => {
         const observer = new MutationObserver((mutations) => {
@@ -39,11 +39,25 @@ export async function ocrImg(page: Page) {
     const observedElement = document.querySelector(
       "#imageCaptchaDivision"
     ) as HTMLElement;
+    if (!regenImgBtn) {
+      return {
+        status: "error",
+        message: "regen button not found",
+      };
+    }
     regenImgBtn.click();
     await waitForChange(observedElement);
+    return {
+      status: "success",
+      message: "got new image",
+    };
   });
 
   // await page.waitForTimeout(1000);
+
+  if (result.status === "error") {
+    throw new Error(result.message);
+  }
 
   const cleanedImg = await getCleanedImg(page);
   let recognizedText = await getText(cleanedImg);
